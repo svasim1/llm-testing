@@ -1,54 +1,46 @@
 import torch
-import transformers
-import logging
+from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+from sentence_transformers import SentenceTransformer
+import faiss
+import numpy as np
 
-logging.basicConfig(level=logging.DEBUG)
+model_name = "AI-Sweden-Models/gpt-sw3-126m-instruct"
+device = 0 if torch.cuda.is_available() else -1
+prompt_query = input("Enter your query: ")
 
-model_id = "AI-Sweden-Models/Llama-3-8B-instruct"
+# Load the GPT-3 model and tokenizer
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+generator = pipeline('text-generation', model=AutoModelForCausalLM.from_pretrained(model_name), tokenizer=tokenizer, device=device)
 
-pipeline = transformers.pipeline(
-    "text-generation",
-    model=model_id,
-    model_kwargs={"torch_dtype": torch.bfloat16},
-    device_map="auto",
-)
+# Embedder model
+embedder = SentenceTransformer('all-MiniLM-L6-v2')
 
-context = '# kontext:\nEXEMPEL (DE FÖRSTA 5 av 100):\nFortkörning förekommer ofta på gatan.\n\n' \
-          'Fullständigt kaos med bilar parkerade på trottoarer, i vägkorsningar och på privat mark. ' \
-          'Vansinneskörningar i hög hastighit och allmänt ignorerande av trafikregler (t.ex. väjningsplikt) ' \
-          'med stor fara för oskyddade trafikanter. Problem är återkommande.\n\n' \
-          'Bilister i Tygelsjö kör alldeles för fort! Hastighetsgränsen på 40 respekteras inte [nr] gränsen' \
-          ' framför skolarna respekteras ännu mindre. Man borde sätta upp digitala hastighetsskyltar som det ' \
-          'finns i exempelvis Bunkeflostrand och Käglinge.\n\nfrågor om fortköning\n\nPå landmannagatan och ' \
-          'Kopparbergsgatan körs det för snabbt och med för högljudda fordon. Detta händer åtminstone 20 ' \
-          'gånger varje kväll. På Lantmannagatan där det finns farthinder är dint lika illa som på ' \
-          'Kopparbergsgatan där det inte finns några hinder. trafiken gör att det är svårt at tha ' \
-          'fönster öppna på kvällar, i synnerhet jag som har en liten bebis som vaknar av de kraftiga' \
-          ' och plötsliga ljuden från dessa fortkörare. Det är alltså inte den normala trafiken som är problemet, ' \
-          'utan de alltför många som kö snabbt och med starka ljud från bilen.'
-
-question = "På vilka platser är fortkörning ett problem?"
-
-messages = [
-    {"role": "system", "content": "Du är en svensktalande assistent som sammanfattar text."},
-    {"role": "user",
-     "content": "Svara på frågan genom att sammanfatta innehållet i exemplen med egna ord. "
-                f"Håll sammanfattningen kort och koncis.\n # Fråga {question}\n # Exempel:\n{context}"
-     },
+# Context (should be documents in ./data/)
+documents = [
+    "Träd är viktiga för att de ger syre.",
+    "Skogar hjälper till att reglera klimatet.",
+    "Fotosyntesen är processen genom vilken växter tillverkar sin mat."
+    "Kontrakt är en överenskommelse mellan två eller flera parter som skapar en rättslig skyldighet att göra eller inte göra något."
 ]
 
-terminators = [
-    pipeline.tokenizer.eos_token_id,
-    pipeline.tokenizer.convert_tokens_to_ids("<|eot_id|>")
-]
+# Embed the context (./data/)
+embeddings = embedder.encode(documents, convert_to_tensor=False)
 
-outputs = pipeline(
-    messages,
-    max_new_tokens=1024,
-    eos_token_id=terminators,
-    pad_token_id=pipeline.tokenizer.eos_token_id,
-    do_sample=True,
-    temperature=0.7,
-    top_p=0.9,
-)
-print(outputs[0]["generated_text"][-1])
+# ????
+index = faiss.IndexFlatL2(embeddings.shape[1])
+index.add(np.array(embeddings))
+
+# Step 6: Encode Query and Retrieve Relevant Documents
+query_embedding = embedder.encode([prompt_query])
+top_k = 3  # Number of relevant documents to retrieve
+distances, indices = index.search(np.array(query_embedding), top_k)
+
+# Retrieve the top matching documents
+retrieved_docs = "\n".join([documents[idx] for idx in indices[0]])
+
+# Step 7: Combine Retrieved Documents with Query for Generation
+prompt = f"Relevant information:\n{retrieved_docs}\n\nUser: {prompt_query}\nBot:"
+
+# Step 8: Generate Response
+response = generator(prompt, max_new_tokens=100, do_sample=True, temperature=0.6, top_p=1)[0]["generated_text"]
+print(response)
