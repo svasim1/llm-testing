@@ -1,5 +1,9 @@
 # Virtual Environment
-.env/
+.venv/
 
-# Logs
-result.html
+# Environment Variables
+.env
+
+# Python
+__pycache__/
+
