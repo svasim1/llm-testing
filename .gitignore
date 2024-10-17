@@ -1,5 +1,6 @@
 # Virtual Environment
 .venv/
+.venv-linux/
 
 # Environment Variables
 .env
@@ -7,3 +8,5 @@
 # Python
 __pycache__/
 
+# HuggingFace
+.cache/

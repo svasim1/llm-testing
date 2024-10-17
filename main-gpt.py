@@ -1,12 +1,19 @@
+import os
+# Custom cache
+PATH = 'D:/dev/projekt/llm-testing/.cache'
+os.environ['HF_HOME'] = PATH
+os.environ['HF_DATASETS_CACHE'] = PATH
+os.environ['TORCH_HOME'] = PATH
+
 import torch
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
-model_name = "AI-Sweden-Models/gpt-sw3-126m-instruct"
+model_name = "AI-Sweden-Models/gpt-sw3-1.3b-instruct"
 device = 0 if torch.cuda.is_available() else -1
-prompt_query = input("Enter your query: ")
+prompt_query = input(f"\nEnter your query: ")
 
 # Load the GPT-3 model and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -16,12 +23,13 @@ generator = pipeline('text-generation', model=AutoModelForCausalLM.from_pretrain
 embedder = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Context (should be documents in ./data/)
-documents = [
-    "Träd är viktiga för att de ger syre.",
-    "Skogar hjälper till att reglera klimatet.",
-    "Fotosyntesen är processen genom vilken växter tillverkar sin mat."
-    "Kontrakt är en överenskommelse mellan två eller flera parter som skapar en rättslig skyldighet att göra eller inte göra något."
-]
+
+
+
+documents = []
+
+for line in open('./data/lagbok.txt', 'r'):
+    documents.append(line)
 
 # Embed the context (./data/)
 embeddings = embedder.encode(documents, convert_to_tensor=False)
@@ -30,7 +38,7 @@ embeddings = embedder.encode(documents, convert_to_tensor=False)
 index = faiss.IndexFlatL2(embeddings.shape[1])
 index.add(np.array(embeddings))
 
-# Step 6: Encode Query and Retrieve Relevant Documents
+# Encode Query and Retrieve Relevant Documents
 query_embedding = embedder.encode([prompt_query])
 top_k = 3  # Number of relevant documents to retrieve
 distances, indices = index.search(np.array(query_embedding), top_k)
@@ -38,9 +46,9 @@ distances, indices = index.search(np.array(query_embedding), top_k)
 # Retrieve the top matching documents
 retrieved_docs = "\n".join([documents[idx] for idx in indices[0]])
 
-# Step 7: Combine Retrieved Documents with Query for Generation
+# Combine Retrieved Documents with Query for Generation
 prompt = f"Relevant information:\n{retrieved_docs}\n\nUser: {prompt_query}\nBot:"
 
-# Step 8: Generate Response
-response = generator(prompt, max_new_tokens=100, do_sample=True, temperature=0.6, top_p=1)[0]["generated_text"]
+# Generate Response
+response = generator(prompt, max_new_tokens=1024, do_sample=True, temperature=0.7, top_p=1)[0]["generated_text"]
 print(response)
