@@ -4,6 +4,9 @@ from llama_index.core.chat_engine import CondensePlusContextChatEngine
 from llama_index.core.memory import ChatMemoryBuffer
 import os
 from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 # Load the API key from the .env file
 load_dotenv()
@@ -50,6 +53,9 @@ Uppföljningsfråga: {question}
 Fristående fråga:
 """
 
+
+
+
 # Hardcoded chat history to start the conversation
 custom_chat_history = [
     ChatMessage(
@@ -71,17 +77,35 @@ chat_engine = CondensePlusContextChatEngine.from_defaults(
     verbose=True,
 )
 
-# Chat loop
-print("Assistant: Hej! Vad kan jag hjälpa dig med?")
-while True:
-    user_input = input("Du: ")
+app = FastAPI()
 
-    # Add response to chat history
-    custom_chat_history.append(ChatMessage(role=MessageRole.USER, content=user_input))
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this to your needs
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
 
-    # Get the response
-    response = chat_engine.chat(user_input)
+class Question(BaseModel):
+    question: str    
 
-    # Print the response and add it to the chat history
-    print(f"Assistent:\n{response}")
-    custom_chat_history.append(ChatMessage(role=MessageRole.ASSISTANT, content=response))
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
+
+@app.post("/chat")
+def chat(input: Question):
+    response = run_your_chatbot(input.question)
+    return {"response": response}
+
+# Function to run chatbot and return message
+def run_your_chatbot(message):
+    response = chat_engine.chat(message)
+    return response
+
+# Chat endpoint
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
