@@ -4,16 +4,25 @@ from llama_index.core.chat_engine import CondensePlusContextChatEngine
 from llama_index.core.memory import ChatMemoryBuffer
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from pydantic import BaseModel, Field
 
 # Load the API key from the .env file
 load_dotenv()
 os.environ['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 
+# Load the environment variables - see .env.sample
+PERSIST_DIR = os.getenv('PERSIST_DIR')
+
+SERVER_HOST = os.getenv('SERVER_HOST')
+SERVER_PORT = os.getenv('SERVER_PORT')
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS')
+
 # Store the index
-PERSIST_DIR = "./storage"
 if not os.path.exists(PERSIST_DIR):
     # load the documents and create the index
     documents = SimpleDirectoryReader("data").load_data()
@@ -53,9 +62,6 @@ Uppföljningsfråga: {question}
 Fristående fråga:
 """
 
-
-
-
 # Hardcoded chat history to start the conversation
 custom_chat_history = [
     ChatMessage(
@@ -74,38 +80,40 @@ chat_engine = CondensePlusContextChatEngine.from_defaults(
     context_prompt=context_prompt,
     condense_prompt=condense_prompt,
     chat_history=custom_chat_history,
-    verbose=True,
 )
 
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
+# Setup FastAPI
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this to your needs
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["POST"],
+    allow_headers=["Content-Type"],
 )
 
 class Question(BaseModel):
-    question: str    
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+    question: str = Field(..., min_length=1, max_length=500, pattern=r'^[a-zA-Z0-9\s\.,?!åäöÅÄÖ]+$')
 
 @app.post("/chat")
-def chat(input: Question):
-    response = run_your_chatbot(input.question)
+@limiter.limit("30/minute")
+async def chat(request: Request, question: Question, background_tasks: BackgroundTasks):
+    response = await chatbot(question.question)
     return {"response": response}
 
 # Function to run chatbot and return message
-def run_your_chatbot(message):
+async def chatbot(message):
     response = chat_engine.chat(message)
     return response
 
 # Chat endpoint
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=SERVER_HOST, port=SERVER_PORT)

@@ -26,11 +26,13 @@ Run whichever script you want to test, for example:
 python main-openai.py
 ```
 
+Note: remove `.storage/` everytime you update the `data/` folder.
+
 ### Status
 
 **main-gpt.py** - kind of working, but not very intelligent
 **main-llama.py** - kind of working, but not as intended
-**main-openai.py** - working with context and everything
+**main-openai.py** - working with context and everything, it can communicate through an API
 
 ### Documentation
 

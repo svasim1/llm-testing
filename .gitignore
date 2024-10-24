@@ -7,8 +7,12 @@
 
 # Python
 __pycache__/
+.pytest_cache/
 
 # HuggingFace
 .cache/
+    
+# VSCode
+.vscode/
 
 storage/
