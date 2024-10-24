@@ -27,10 +27,13 @@ Note: remove `.storage/` everytime you update the `data/` folder.
 ### Status
 
 **main-gpt.py** - kind of working, but not very intelligent
+
 **main-llama.py** - kind of working, but not as intended
+
 **main-openai.py** - working with context and everything, it can communicate through an API
 
 ### Documentation
 
 [LlamaIndex using API](https://docs.llamaindex.ai/en/stable/getting_started/starter_example/)
+
 [LlamaIndex local](https://docs.llamaindex.ai/en/stable/getting_started/starter_example_local/)
