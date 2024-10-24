@@ -22,7 +22,7 @@ Run whichever script you want to test, for example:
 python main-openai.py
 ```
 
-Note: remove `.storage/` everytime you update the `data/` folder.
+Note: remove `storage/`, or whatever you have set `PERSIST_DIR` to in `.env`, everytime you update the `data/` folder.
 
 ### Status
 

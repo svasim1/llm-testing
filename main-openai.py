@@ -17,9 +17,6 @@ os.environ['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 
 # Load the environment variables - see .env.sample
 PERSIST_DIR = os.getenv('PERSIST_DIR')
-
-SERVER_HOST = os.getenv('SERVER_HOST')
-SERVER_PORT = os.getenv('SERVER_PORT')
 ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS')
 
 # Store the index
@@ -116,4 +113,4 @@ async def chatbot(message):
 # Chat endpoint
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=SERVER_HOST, port=SERVER_PORT)
+    uvicorn.run(app, host=os.getenv('UVICORN_HOST'), port=int(os.getenv('UVICORN_PORT')))
