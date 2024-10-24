@@ -12,11 +12,7 @@ To install the required dependencies, run:
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in the root directory and add the following
-
-```bash
-OPENAI_API_KEY="YOUR_API_KEY"
-```
+Also, rename the `.env.sample` file and fill in the required fields.
 
 ### Usage
 
