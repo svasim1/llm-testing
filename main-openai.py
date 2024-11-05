@@ -97,7 +97,7 @@ app.add_middleware(
 )
 
 class Question(BaseModel):
-    question: str = Field(..., min_length=1, max_length=500, pattern=r'^[a-zA-Z0-9\s\.,?!åäöÅÄÖ]+$')
+    question: str = Field(..., min_length=1, max_length=500, pattern=r'^[a-zA-Z0-9\s\.,?!åäöÅÄÖ":;]+$')
 
 @app.post("/chat")
 @limiter.limit("30/minute")
