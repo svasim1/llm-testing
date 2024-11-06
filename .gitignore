@@ -15,5 +15,9 @@ __pycache__/
 # VSCode
 .vscode/
 
+# Chatbot Storage
 storage/
 .storage/
+
+# Logs
+logs/
