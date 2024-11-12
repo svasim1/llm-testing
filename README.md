@@ -1,8 +1,8 @@
 # LLM Testing
 
-## Description
+## Description.
 
-This project is designed to help me learn about Large Language Models, with a specific focus on Retrieval-Augmented Generation (RAG) models.
+This project is for me learning about Large Language Models, with a specific focus on Retrieval-Augmented Generation (RAG) models.
 
 ## Installation
 
@@ -12,14 +12,14 @@ To install the required dependencies, run:
 pip install -r requirements.txt
 ```
 
-Also, rename the `.env.sample` file and fill in the required fields.
+Also, rename the `.env.sample` file to `.env` and fill in the required fields.
 
 ### Usage
 
-Run whichever script you want to test, for example:
+Run the `main.py` script
 
 ```python
-python main-openai.py
+python main.py
 ```
 
 Note: remove `storage/`, or whatever you have set `PERSIST_DIR` to in `.env`, everytime you update the `data/` folder.
