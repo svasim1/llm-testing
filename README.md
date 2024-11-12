@@ -37,3 +37,9 @@ Note: remove `storage/`, or whatever you have set `PERSIST_DIR` to in `.env`, ev
 [LlamaIndex using API](https://docs.llamaindex.ai/en/stable/getting_started/starter_example/)
 
 [LlamaIndex local](https://docs.llamaindex.ai/en/stable/getting_started/starter_example_local/)
+
+### Important information
+
+[OpenAI: Safety best practices](https://platform.openai.com/docs/guides/safety-best-practices)
+
+[OpenAI: Europe Terms of Use](https://openai.com/policies/terms-of-use/)

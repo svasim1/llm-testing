@@ -27,7 +27,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler(os.path.join(log_directory, log_filename), encoding='utf-8'),
-        logging.StreamHandler()
+        #logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 PERSIST_DIR = os.getenv('PERSIST_DIR')
-ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS').split(',')
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS')
 
 if not OPENAI_API_KEY or not PERSIST_DIR or not ALLOWED_ORIGINS:
     logger.error("Required environment variables are not set")
@@ -115,7 +115,6 @@ limiter = Limiter(key_func=get_remote_address)
 # Setup FastAPI
 app = FastAPI()
 app.state.limiter = limiter
-app.add_exception_handler(StarletteHTTPException, _rate_limit_exceeded_handler)
 
 # Configure CORS
 app.add_middleware(
@@ -130,7 +129,7 @@ class Question(BaseModel):
     question: str = Field(..., min_length=1, max_length=500, pattern=r'^[a-zA-Z0-9\s\.,?!åäöÅÄÖ":;]+$')
 
 @app.post("/chat")
-@limiter.limit("50/day")
+@limiter.limit("10/day")
 async def chat(request: Request, question: Question, background_tasks: BackgroundTasks):
     try:
         response = await chatbot(question.question)
@@ -143,18 +142,6 @@ async def chat(request: Request, question: Question, background_tasks: Backgroun
 async def chatbot(message):
     response = chat_engine.chat(message)
     return response
-
-# Custom rate limit exceeded handler
-async def _rate_limit_exceeded_handler(request: Request, exc: StarletteHTTPException):
-    if exc.status_code == HTTP_429_TOO_MANY_REQUESTS:
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"detail": "Rate limit exceeded. Try again later."},
-        )
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
-    )
 
 # Chat endpoint
 if __name__ == "__main__":
