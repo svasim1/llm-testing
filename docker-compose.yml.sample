@@ -1,0 +1,8 @@
+services:
+  app:
+    build:
+      context: .
+  image: chatbot
+  container_name: chatbot
+  ports:
+    - "8000:8000"

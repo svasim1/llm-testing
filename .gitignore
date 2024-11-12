@@ -21,3 +21,6 @@ storage/
 
 # Logs
 logs/
+
+# Docker
+docker-compose.yml
