@@ -24,3 +24,8 @@ logs/
 
 # Docker
 docker-compose.yml
+
+# SQL
+create_users.py
+list_users.py
+database.db

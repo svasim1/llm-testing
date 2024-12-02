@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from passlib.context import CryptContext
 
 DATABASE_URL = "sqlite:///./database.db"
@@ -29,6 +28,9 @@ def create_user(db, username, email, password):
     db.commit()
     db.refresh(db_user)
     return db_user
+
+# Create the database tables
+Base.metadata.create_all(bind=engine)
 
 def get_user(db, user_id):
     return db.query(User).filter(User.id == user_id).first()
