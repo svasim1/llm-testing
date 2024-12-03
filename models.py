@@ -1,8 +1,11 @@
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base
 from passlib.context import CryptContext
+from dotenv import load_dotenv
 import os
 from dotenv import load_dotenv
+
+load_dotenv()
 
 load_dotenv()
 
