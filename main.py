@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -11,7 +12,7 @@ from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from openai import OpenAI
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, load_index_from_storage
+from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage, Document
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.core.chat_engine import CondensePlusContextChatEngine
 from llama_index.core.memory import ChatMemoryBuffer
@@ -125,28 +126,53 @@ async def moderate_content(content: str):
     if response.results[0].flagged:
         raise HTTPException(status_code=400, detail="Content flagged as unsafe")
 
-# Store the index
+# Split the text into chunks using sentences
+def split_text_into_chunks(text, chunk_size=500):
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    chunks = []
+    current_chunk = []
+    for sentence in sentences:
+        if sum(len(s) for s in current_chunk) + len(sentence) <= chunk_size:
+            current_chunk.append(sentence)
+        else:
+            chunks.append(' '.join(current_chunk))
+            current_chunk = [sentence]
+    if current_chunk:
+        chunks.append(' '.join(current_chunk))
+    return chunks
+
+# Read the lagbok.txt file
+with open('data/lagbok.txt', 'r', encoding='utf-8') as file:
+    lagbok_text = file.read()
+
+# Split the text into chunks
+chunks = split_text_into_chunks(lagbok_text)
+
+# Convert chunks to Document objects
+documents = [Document(text=chunk) for chunk in chunks] 
+
+# Define your persist directory path
 try:
     if not os.path.exists(PERSIST_DIR):
-        # load the documents and create the index
-        documents = SimpleDirectoryReader("data").load_data()
+        os.makedirs(PERSIST_DIR)
+        # Create the index
         index = VectorStoreIndex.from_documents(documents)
-        # store it for later
+        # Store it for later
         index.storage_context.persist(persist_dir=PERSIST_DIR)
-        logger.info(f"Index stored in ${PERSIST_DIR}")
+        print(f"Index stored in {PERSIST_DIR}")
     else:
-        # load the existing index
+        # Load the existing index
         storage_context = StorageContext.from_defaults(persist_dir=PERSIST_DIR)
         index = load_index_from_storage(storage_context)
-        logger.info(f"Index loaded from ${PERSIST_DIR}")
+        print(f"Index loaded from {PERSIST_DIR}")
 except Exception as e:
-    logger.error(f"Error while setting up the index: {e}")
+    print(f"Error while setting up the index: {e}")
     raise
 
 # Create retriever from index
 retriever = index.as_retriever()
 
-# Inoital prompt that gives context to the AI
+# Initial prompt that gives context to the AI
 context_prompt = """
 Du är en AI-assistent som hjälper till att sammanfatta lagboken på svenska.
 Var alltid artig, använd formellt språk och ge detaljerade svar. 
@@ -229,9 +255,10 @@ async def chat(request: Request, question: Question, background_tasks: Backgroun
     logger.debug(f"Received question: {question.question}")
     logger.debug(f"Current user: {current_user.username}")
     try:
-        response = await chatbot(question.question, current_user.username)
+        response, sources = await chatbot(question.question, current_user.username)
         logger.debug(f"Chatbot response: {response}")
-        return {"response": response}
+        logger.debug(f"Sources: {sources}")
+        return {"response": response, "sources": sources}
     except HTTPException as e:
         logger.error(f"HTTPException in chat endpoint: {e.detail}")
         raise e
@@ -250,11 +277,13 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     logger.debug(f"Found user: {user.username}, {user.email}")
     return user
 
-# Function to run chatbot and return message
+# Function to run chatbot and return message and sources
 async def chatbot(message, user_id):
     await moderate_content(message)
+    results = retriever.retrieve(message)
+    sources = [result.node.get_content() for result in results]  # Correctly access the content of the node
     response = chat_engine.chat(message)
-    return response
+    return response, sources
 
 # Run the app
 if __name__ == "__main__":
