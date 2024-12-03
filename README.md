@@ -57,6 +57,8 @@ docker compose up -d --build
 
 [OpenAI: Europe Terms of Use](https://openai.com/policies/terms-of-use/)
 
+[LlamaIndex: Building Performant RAG Applications for Production](https://docs.llamaindex.ai/en/stable/optimizing/production_rag/)
+
 ```
 
 ```
