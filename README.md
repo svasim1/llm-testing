@@ -45,9 +45,12 @@ docker compose up -d --build
 
   - To be able to send user information to OpenAI as stated in [OpenAI: Safety best practices](https://platform.openai.com/docs/guides/safety-best-practices)
 
-- [ ] Split the code into modules
+- [x] Split the code into modules
 - [x] Split documents into chunks
-  - [ ] Show the source to the user
+  - [ ] Redo logging in modules
+  - [ ] Test docker with modules
+  - [ ] Update `requirements.txt`
+- [ ] Add tests?
 
 ### Documentation
 
@@ -58,7 +61,3 @@ docker compose up -d --build
 [OpenAI: Safety best practices](https://platform.openai.com/docs/guides/safety-best-practices)
 
 [OpenAI: Europe Terms of Use](https://openai.com/policies/terms-of-use/)
-
-```
-
-```
