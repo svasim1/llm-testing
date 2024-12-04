@@ -13,9 +13,6 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from openai import OpenAI
 from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage, Document
-from llama_index.core.llms import ChatMessage, MessageRole
-from llama_index.core.chat_engine import CondensePlusContextChatEngine
-from llama_index.core.memory import ChatMemoryBuffer
 from sqlalchemy.orm import Session
 from models import SessionLocal, get_user, get_user_by_username, User
 
@@ -27,9 +24,9 @@ if not os.path.exists(log_directory):
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(os.path.join(log_directory, log_filename), encoding='utf-8'),
+        logging.FileHandler(os.path.join(log_directory, log_filename), encoding="utf-8"),
         #logging.StreamHandler()
     ]
 )
@@ -39,7 +36,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Initialize the OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Dependency to get the database session
 def get_db():
@@ -50,11 +47,11 @@ def get_db():
         db.close()
 
 # Constants
-SECRET_KEY = os.getenv('SECRET_KEY')
-ALGORITHM = os.getenv('ALGORITHM')
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-PERSIST_DIR = os.getenv('PERSIST_DIR')
-ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS')
+PERSIST_DIR = os.getenv("PERSIST_DIR")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
 
 # OAuth2 and password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -135,14 +132,14 @@ def split_text_into_chunks(text, chunk_size=500):
         if sum(len(s) for s in current_chunk) + len(sentence) <= chunk_size:
             current_chunk.append(sentence)
         else:
-            chunks.append(' '.join(current_chunk))
+            chunks.append(" ".join(current_chunk))
             current_chunk = [sentence]
     if current_chunk:
-        chunks.append(' '.join(current_chunk))
+        chunks.append(" ".join(current_chunk))
     return chunks
 
 # Read the lagbok.txt file
-with open('data/lagbok.txt', 'r', encoding='utf-8') as file:
+with open("data/lagbok.txt", "r", encoding="utf-8") as file:
     lagbok_text = file.read()
 
 # Split the text into chunks
@@ -183,39 +180,9 @@ Här är relevanta dokument för sammanfattningen av lagboken:
 {context_str}
 
 Instruktion: Baserat på dokumenten ovan, ge ett detaljerat svar på användarfrågan nedan.
-Var noggran och svara "vet ej" om svaret inte finns i dokumentet. Utgå att allting som inte står i dokumentet är felaktigt, och du vill inte förmedla felaktik information.
+Var noggran och svara "vet ej" om svaret inte finns i dokumentet. Utgå att allting som inte står i dokumentet är felaktigt, och du vill inte förmedla felaktig information.
+Ditt svar kommer visat på en hemsida, och använd därför inte till exempel markdown formatering. Svara inte för utförligt och se till att all information får plats i svaret.
 """
-
-# Prompt for condensing the conversation
-condense_prompt = """
-Givet följande konversation mellan en användare och en AI-assistent samt en uppföljningsfråga från användaren,
-omformulera uppföljningsfrågan så att den blir en fristående fråga.
-
-Chatthistorik:
-{chat_history}
-Uppföljningsfråga: {question}
-Fristående fråga:
-"""
-
-# Hardcoded chat history to start the conversation
-custom_chat_history = [
-    ChatMessage(
-        role=MessageRole.USER,
-        content="Hej assistenten, idag sammarfattar vi lagboken på svenska.",
-    ),
-    ChatMessage(role=MessageRole.ASSISTANT, content="Okej, låter bra."),
-]
-
-# Query the data
-query_engine = index.as_query_engine()
-chat_engine = CondensePlusContextChatEngine.from_defaults(
-    retriever=retriever,
-    memory = ChatMemoryBuffer.from_defaults(token_limit=3900),
-    query_engine=query_engine,
-    context_prompt=context_prompt,
-    condense_prompt=condense_prompt,
-    chat_history=custom_chat_history,
-)
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -255,10 +222,10 @@ async def chat(request: Request, question: Question, background_tasks: Backgroun
     logger.debug(f"Received question: {question.question}")
     logger.debug(f"Current user: {current_user.username}")
     try:
-        response, sources = await chatbot(question.question, current_user.username)
-        logger.debug(f"Chatbot response: {response}")
+        response_context, sources = await chatbot(question.question, current_user.username)
+        logger.debug(f"Chatbot response: {response_context}")
         logger.debug(f"Sources: {sources}")
-        return {"response": response, "sources": sources}
+        return {"response": response_context, "sources": sources}
     except HTTPException as e:
         logger.error(f"HTTPException in chat endpoint: {e.detail}")
         raise e
@@ -267,25 +234,41 @@ async def chat(request: Request, question: Question, background_tasks: Backgroun
         raise HTTPException(status_code=500, detail="Internal server error")
 
 # Get user by ID
-@app.get("/users/{user_id}")
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    logger.debug(f"Getting user with ID: {user_id}")
-    user = get_user(db, user_id)
-    if user is None:
-        logger.debug(f"User not found with ID: {user_id}")
-        raise HTTPException(status_code=404, detail="User not found")
-    logger.debug(f"Found user: {user.username}, {user.email}")
-    return user
-
-# Function to run chatbot and return message and sources
 async def chatbot(message, user_id):
     await moderate_content(message)
+    
+    # Retrieve relevant documents
     results = retriever.retrieve(message)
-    sources = [result.node.get_content() for result in results]  # Correctly access the content of the node
-    response = chat_engine.chat(message)
-    return response, sources
+    sources = [result.node.get_content() for result in results]
+    
+    # Prepare the context with the retrieved documents
+    context = "\n\n".join(sources)
+    
+    # Make API call to OpenAI with user ID and context
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": context_prompt},
+            {"role": "user", "content": message},
+            {"role": "system", "content": f"Svara endast efter dessa relevanta källor och hänvisa alltid utifrån kapitel: {sources}"}
+        ],
+        max_tokens=500, # The higher the number, the longer the response (uses more tokens :p)
+        stop=["###"],
+        user=user_id
+    )
+    
+    # Extract the actual content from the response
+    response_content = response.choices[0].message.content
+    
+    # Log token usage details
+    logger.debug(f"Prompt tokens: {response.usage.prompt_tokens}")
+    logger.debug(f"Completion tokens: {response.usage.completion_tokens}")
+    logger.debug(f"Total tokens: {response.usage.total_tokens}")
+    
+    return response_content, sources
 
 # Run the app
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=os.getenv('UVICORN_HOST'), port=int(os.getenv('UVICORN_PORT')))
+    uvicorn.run(app, host=os.getenv("UVICORN_HOST"), port=int(os.getenv("UVICORN_PORT")))

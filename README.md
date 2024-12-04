@@ -41,8 +41,10 @@ docker compose up -d --build
 - [x] Add logging
 - [x] Run in Docker container
 - [x] Migrate to SQLite
-- [ ] ~~Redo the chatbot code - read [this](https://docs.llamaindex.ai/en/stable/examples/llm/openai/)~~
-  - ~~To be able to send user information to OpenAI as stated in [OpenAI: Safety best practices](https://platform.openai.com/docs/guides/safety-best-practices)~~
+- [x] Redo the chatbot code - read [this](https://docs.llamaindex.ai/en/stable/examples/llm/openai/).
+
+  - To be able to send user information to OpenAI as stated in [OpenAI: Safety best practices](https://platform.openai.com/docs/guides/safety-best-practices)
+
 - [ ] Split the code into modules
 - [x] Split documents into chunks
   - [ ] Show the source to the user
