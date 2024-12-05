@@ -53,7 +53,7 @@ Note that the database url is a bit tricky to set up depending on your system si
   - [x] Test docker with modules
   - [x] Update `requirements.txt`
 - [ ] Add tests?
-- [ ] Custom Swagger UI for the API documentation
+- [x] Custom Swagger UI for the API documentation
 - [ ] Check the **Important information** section
 
 ### Documentation

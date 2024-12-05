@@ -23,7 +23,18 @@ ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
 limiter = Limiter(key_func=get_remote_address)
 
 # Setup FastAPI
-app = FastAPI()
+app = FastAPI(
+    title="Chatbot API",
+    description="A simple chatbot API for riksdagstracker.se",
+    version="1.0.0",
+    swagger_ui_parameters={
+        "deepLinking": True,
+        "displayOperationId": True,
+        "docExpansion": "none",
+        "filter": True,
+        "showExtensions": True,
+    }
+)
 app.state.limiter = limiter
 
 # Configure CORS
