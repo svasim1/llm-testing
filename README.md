@@ -16,10 +16,10 @@ Also, rename the `.env.sample` file to `.env` and fill in the required fields.
 
 ### Usage
 
-Run the `main.py` script
+In the `app/` folder, start the Uvicorn server:
 
-```python
-python main.py
+```bash
+uvicorn main:app --reload
 ```
 
 Note: remove `storage/`, or whatever you have set `PERSIST_DIR` to in `.env`, everytime you update the `data/` folder.
@@ -31,6 +31,8 @@ To run the project in a Docker container, configure `docker-compose.yml` accordi
 ```bash
 docker compose up -d --build
 ```
+
+Note that the database url is a bit tricky to set up depending on your system since it should be placed in a mirrored mount point. Read the `.env.sample` carefully.
 
 ### Status
 
@@ -47,10 +49,12 @@ docker compose up -d --build
 
 - [x] Split the code into modules
 - [x] Split documents into chunks
-  - [ ] Redo logging in modules
-  - [ ] Test docker with modules
-  - [ ] Update `requirements.txt`
+  - [x] Redo logging in modules
+  - [x] Test docker with modules
+  - [x] Update `requirements.txt`
 - [ ] Add tests?
+- [ ] Custom Swagger UI for the API documentation
+- [ ] Check the **Important information** section
 
 ### Documentation
 

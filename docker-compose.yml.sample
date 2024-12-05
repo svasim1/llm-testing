@@ -2,11 +2,10 @@ services:
   app:
     build:
       context: .
-  image: chatbot
-  container_name: chatbot
-  ports:
-    - "8000:8000"
-    environment:
-      - DATABASE_URL="" # Database URL (str, e.g. sqlite:///./database.db)
+      dockerfile: Dockerfile
+    image: chatbot
+    container_name: chatbot
+    ports:
+      - "8000:8000"
     volumes:
-      - /var/www/chatbot:/app/data # Database location, outside of the container (str, e.g. /var/www/chatbot:/app/data)
+      - /var/www/chatbot:/var/www/chatbot # Database location, outside of the container (str, e.g. /var/www/chatbot:/app/data)

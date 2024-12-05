@@ -6,7 +6,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from dotenv import load_dotenv
 from database import get_db, authenticate_user, get_current_user, create_access_token, TokenData
-from chat import chatbot
+from chat import chatbot, token_usage_stats
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from models import User
@@ -17,6 +17,7 @@ load_dotenv()
 
 # Constants
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -28,7 +29,7 @@ app.state.limiter = limiter
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins="*",
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
@@ -40,7 +41,7 @@ class Token(BaseModel):
     token_type: str
 
 class Question(BaseModel):
-    question: str = Field(..., min_length=1, max_length=500, pattern=r'^[a-zA-Z0-9\s\.,?!åäöÅÄÖ":;-]+$')
+    question: str = Field(..., min_length=1, max_length=500, pattern=r'^[\s\S]*$')
 
 # Routes
 @app.post("/token", response_model=Token)
@@ -63,6 +64,11 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 async def chat(request: Request, question: Question, background_tasks: BackgroundTasks, current_user: User = Depends(get_current_user)):
     response_context, sources = await chatbot(question.question, current_user.username)
     return {"response": response_context, "sources": sources}
+
+# Endpoint to get total token usage statistics (for current session)
+@app.get("/token-usage")
+async def get_token_usage():
+    return token_usage_stats
 
 # Run the app
 if __name__ == "__main__":
