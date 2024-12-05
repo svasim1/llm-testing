@@ -80,7 +80,10 @@ retriever = index.as_retriever()
 
 # Function to moderate content
 async def moderate_content(content: str):
-    response = client.moderations.create(input=content)
+    response = client.moderations.create(
+        model="omni-moderation-latest",
+        input=content,
+    )
     if response.results[0].flagged:
         raise HTTPException(status_code=400, detail="Content flagged as unsafe")
 

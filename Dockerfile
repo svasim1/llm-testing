@@ -1,5 +1,8 @@
 FROM python:3.12.7
 
+ENV TZ=Europe/Stockholm
+RUN date
+
 WORKDIR /app
 
 COPY ./requirements.txt requirements.txt

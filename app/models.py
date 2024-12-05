@@ -1,9 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from passlib.context import CryptContext
 from dotenv import load_dotenv
 import os
-from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -23,6 +23,16 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
 
+class Issue(Base):
+    __tablename__ = "issues"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    issue = Column(String, nullable=False)
+    timestamp = Column(DateTime, default=datetime.now)
+
+    user = relationship("User")
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_password_hash(password):
@@ -36,8 +46,8 @@ def create_user(db, username, email, password):
     db.refresh(db_user)
     return db_user
 
-# Create the database tables - not needed in production
-# Base.metadata.create_all(bind=engine)
+# Create the database tables - only needed when adding new tables
+#Base.metadata.create_all(bind=engine)
 
 def get_user(db, user_id):
     return db.query(User).filter(User.id == user_id).first()

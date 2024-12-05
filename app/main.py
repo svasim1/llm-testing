@@ -9,8 +9,8 @@ from database import get_db, authenticate_user, get_current_user, create_access_
 from chat import chatbot, token_usage_stats
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from models import User
-from datetime import timedelta
+from models import User, Issue
+from datetime import timedelta, datetime
 
 # Load the environment variables - see .env.sample
 load_dotenv()
@@ -18,6 +18,7 @@ load_dotenv()
 # Constants
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
+ISSUE_URL = os.getenv("ISSUE_URL")
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -54,6 +55,9 @@ class Token(BaseModel):
 class Question(BaseModel):
     question: str = Field(..., min_length=1, max_length=500, pattern=r'^[\s\S]*$')
 
+class IssueReport(BaseModel):
+    issue: str = Field(..., min_length=1, max_length=500)
+
 # Routes
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -80,6 +84,19 @@ async def chat(request: Request, question: Question, background_tasks: Backgroun
 @app.get("/token-usage")
 async def get_token_usage():
     return token_usage_stats
+
+# Endpoint to report issues
+@app.post("/report")
+async def report_issue(issue: IssueReport, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    try:
+        db_issue = Issue(user_id=current_user.id, issue=issue.issue)
+        db.add(db_issue)
+        db.commit()
+        db.refresh(db_issue)
+        return {"message": "Issue reported successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error while reporting issue")
+
 
 # Run the app
 if __name__ == "__main__":
