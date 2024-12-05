@@ -36,8 +36,8 @@ def create_user(db, username, email, password):
     db.refresh(db_user)
     return db_user
 
-# Create the database tables
-Base.metadata.create_all(bind=engine)
+# Create the database tables - not needed in production
+# Base.metadata.create_all(bind=engine)
 
 def get_user(db, user_id):
     return db.query(User).filter(User.id == user_id).first()
