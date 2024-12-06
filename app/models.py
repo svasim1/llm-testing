@@ -7,8 +7,6 @@ from datetime import datetime
 
 load_dotenv()
 
-load_dotenv()
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL)
@@ -47,7 +45,7 @@ def create_user(db, username, email, password):
     return db_user
 
 # Create the database tables - only needed when adding new tables
-#Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 def get_user(db, user_id):
     return db.query(User).filter(User.id == user_id).first()
