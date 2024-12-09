@@ -2,8 +2,7 @@ import os
 from openai import OpenAI
 from fastapi import HTTPException
 from logging_conf import logger
-import re
-from llama_index.core import VectorStoreIndex, Document, StorageContext, load_index_from_storage
+from data_processing import create_or_load_index
 
 # Constants
 PERSIST_DIR = "storage"
@@ -32,48 +31,8 @@ Ditt svar kommer visat på en hemsida, och använd därför inte till exempel ma
 # Initialize the OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Split the text into chunks using sentences
-def split_text_into_chunks(text, chunk_size=500):
-    sentences = re.split(r'(?<=[.!?]) +', text)
-    chunks = []
-    current_chunk = []
-    for sentence in sentences:
-        if sum(len(s) for s in current_chunk) + len(sentence) <= chunk_size:
-            current_chunk.append(sentence)
-        else:
-            chunks.append(" ".join(current_chunk))
-            current_chunk = [sentence]
-    if current_chunk:
-        chunks.append(" ".join(current_chunk))
-    return chunks
-
-# Read the lagbok.txt file
-with open("../data/lagbok.txt", "r", encoding="utf-8") as file:
-    lagbok_text = file.read()
-
-# Split the text into chunks
-chunks = split_text_into_chunks(lagbok_text)
-
-# Convert chunks to Document objects
-documents = [Document(text=chunk) for chunk in chunks] 
-
-# Define your persist directory path
-try:
-    if not os.path.exists(PERSIST_DIR):
-        os.makedirs(PERSIST_DIR)
-        # Create the index
-        index = VectorStoreIndex.from_documents(documents)
-        # Store it for later
-        index.storage_context.persist(persist_dir=PERSIST_DIR)
-        logger.debug(f"Index stored in {PERSIST_DIR}")
-    else:
-        # Load the existing index
-        storage_context = StorageContext.from_defaults(persist_dir=PERSIST_DIR)
-        index = load_index_from_storage(storage_context)
-        logger.debug(f"Index loaded from {PERSIST_DIR}")
-except Exception as e:
-    logger.error(f"Error while setting up the index: {e}")
-    raise
+# Create or load the index
+index = create_or_load_index()
 
 # Create retriever from index
 retriever = index.as_retriever()
@@ -88,8 +47,8 @@ async def moderate_content(content: str):
         raise HTTPException(status_code=400, detail="Content flagged as unsafe")
 
 # Function to run chatbot and return message and sources
-async def chatbot(message, user_id):
-    logger.info(f"User ID: {user_id}")
+async def chatbot(message, user_email):
+    logger.info(f"User Email: {user_email}")
     logger.info(f"Message: {message}")
     try:
         await moderate_content(message)
@@ -101,8 +60,7 @@ async def chatbot(message, user_id):
         # Prepare the context with the retrieved documents
         context = "\n\n".join(sources)
         
-        # Make API call to OpenAI with user ID and context
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        # Make API call to OpenAI with user email and context
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -112,7 +70,7 @@ async def chatbot(message, user_id):
             ],
             max_tokens=500, # The higher the number, the longer the response (uses more tokens :p)
             stop=["###"],
-            user=user_id
+            user=user_email
         )
         
         # Extract the actual content from the response
@@ -128,4 +86,4 @@ async def chatbot(message, user_id):
         return response_content, sources
     except Exception as e:
         logger.error(f"Error in chatbot: {e}")
-        raise
+        raise HTTPException(status_code=500, detail="Internal Server Error")

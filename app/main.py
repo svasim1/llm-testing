@@ -77,7 +77,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @app.post("/chat")
 @limiter.limit("10/day")
 async def chat(request: Request, question: Question, background_tasks: BackgroundTasks, current_user: User = Depends(get_current_user)):
-    response_context, sources = await chatbot(question.question, current_user.username)
+    response_context, sources = await chatbot(question.question, current_user.email)
     return {"response": response_context, "sources": sources}
 
 # Endpoint to get total token usage statistics (for current session)

@@ -47,15 +47,13 @@ Note that the database url is a bit tricky to set up depending on your system si
 
   - To be able to send user information to OpenAI as stated in [OpenAI: Safety best practices](https://platform.openai.com/docs/guides/safety-best-practices)
 
-- [ ] Send user email to OpenAI
+- [x] Send user email to OpenAI
 - [x] Split the code into modules
 - [x] Split documents into chunks
   - [x] Redo logging in modules
   - [x] Test docker with modules
-  - [x] Update `requirements.txt`
-- [ ] Add tests?
 - [x] Custom Swagger UI for the API documentation
-- [ ] Add support for PDF, and multiple files
+- [x] Add support for PDF, and multiple files
 - [ ] Check the **Important information** section
 
 ### Documentation
