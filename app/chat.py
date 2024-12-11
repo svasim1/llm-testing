@@ -46,6 +46,13 @@ async def moderate_content(content: str):
     if response.results[0].flagged:
         raise HTTPException(status_code=400, detail="Content flagged as unsafe")
 
+# Function to format sources
+def format_sources(sources):
+    formatted_sources = []
+    for i, source in enumerate(sources, 1):
+        formatted_sources.append(f"Källa {i}:\n{source.strip()}\n")
+    return "\n".join(formatted_sources)
+
 # Function to run chatbot and return message and sources
 async def chatbot(message, user_email):
     logger.info(f"User Email: {user_email}")
@@ -76,6 +83,8 @@ async def chatbot(message, user_email):
         # Extract the actual content from the response
         response_content = response.choices[0].message.content
         logger.debug(f"Response content: {response_content}")
+
+        formatted_sources = format_sources(sources)
         
         # Log token usage details
         global token_usage_stats
@@ -83,7 +92,7 @@ async def chatbot(message, user_email):
         token_usage_stats["completion_tokens"] += response.usage.completion_tokens
         token_usage_stats["total_tokens"] += response.usage.total_tokens
         
-        return response_content, sources
+        return response_content, formatted_sources
     except Exception as e:
         logger.error(f"Error in chatbot: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
