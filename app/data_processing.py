@@ -45,6 +45,11 @@ def split_text_into_chunks(text, chunk_size=500):
         chunks.append(" ".join(current_chunk))
     return chunks
 
+# Function to create a summary of a document
+def create_summary(document):
+    # Summary logic - for now just return the first 500 characters
+    return document[:500]
+
 # Function to process all files in a directory
 def process_files_in_directory(directory):
     documents = []
@@ -57,17 +62,20 @@ def process_files_in_directory(directory):
         else:
             continue
         chunks = split_text_into_chunks(text)
-        documents.extend([Document(text=chunk) for chunk in chunks])
+        for chunk in chunks:
+            documents.append(Document(text=chunk, metadata={"filename": filename}))
     return documents
 
 # Function to create or load the index
 def create_or_load_index():
     if not os.path.exists(PERSIST_DIR):
-        os.makedirs(PERSIST_DIR)
+        os.makedirs(PERSIST_DIR, exist_ok=True)
     
     if not os.path.exists(INDEX_FILE):
         documents = process_files_in_directory("../data")
-        index = VectorStoreIndex.from_documents(documents)
+        # Create document summaries and link to detailed chunks
+        summaries = [Document(text=create_summary(doc.text), metadata=doc.metadata) for doc in documents]
+        index = VectorStoreIndex.from_documents(summaries)
         with open(INDEX_FILE, "wb") as f:
             pickle.dump(index, f)
         logger.debug(f"Index created and stored in {INDEX_FILE}")
