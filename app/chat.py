@@ -1,11 +1,14 @@
 import os
+from dotenv import load_dotenv
 from openai import OpenAI
 from fastapi import HTTPException
 from logging_conf import logger
 from data_processing import create_or_load_index
 
+load_dotenv()
+
 # Constants
-PERSIST_DIR = "storage"
+PERSIST_DIR = os.getenv("PERSIST_DIR")
 
 token_usage_stats = {
     "prompt_tokens": 0,

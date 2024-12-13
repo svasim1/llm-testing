@@ -6,7 +6,7 @@ from logging_conf import logger
 from llama_index.core import VectorStoreIndex, Document, StorageContext, load_index_from_storage
 
 # Constants
-PERSIST_DIR = "storage"
+PERSIST_DIR = os.getenv("PERSIST_DIR")
 INDEX_FILE = os.path.join(PERSIST_DIR, "index.pkl")
 
 # Function to extract text from PDF
