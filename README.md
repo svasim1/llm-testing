@@ -69,6 +69,8 @@ docker compose up -d --build
 
 Note that the database URL is a bit tricky to set up depending on your system since it should be placed in a mirrored mount point. Read the `.env.sample` carefully.
 
+You can access the Swagger UI at `http://<your-ip>:<your-port>/docs`.
+
 ## Configuration
 
 To customize the project for your needs, To adapt the project to your needs, you can, among other things, change the following:
@@ -118,6 +120,22 @@ Contributions are welcome! Please read the [contributing guidelines](https://git
 ## License
 
 This project is licensed under the GPL-3.0 License. See the [LICENSE](https://github.com/svasim1/llm-testing/blob/main/LICENSE) file for more details.
+
+## Application Flowchart
+
+```mermaid
+stateDiagram-v2
+    UserInteraction --> AuthenticationCheck
+    AuthenticationCheck --> APIRequest: Authenticated
+    AuthenticationCheck --> UserInteraction: Not Authenticated
+    APIRequest --> Moderation
+    Moderation --> DocumentRetrieval
+    DocumentRetrieval --> ContextPreparation
+    ContextPreparation --> AIResponse
+    AIResponse --> ResponseFormatting
+    ResponseFormatting --> APIResponse
+    APIResponse --> UserInteraction
+```
 
 ## Acknowledgments
 
