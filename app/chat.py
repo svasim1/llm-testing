@@ -76,7 +76,7 @@ async def chatbot(message, user_email):
             messages=[
                 {"role": "system", "content": context_prompt},
                 {"role": "user", "content": message},
-                {"role": "system", "content": f"Svara endast efter dessa relevanta källor och hänvisa alltid utifrån kapitel: {sources}"}
+                {"role": "system", "content": f"Svara endast efter dessa relevanta källor och hänvisa alltid utifrån kapitel: {context}"}
             ],
             max_tokens=500, # The higher the number, the longer the response (uses more tokens :p)
             stop=["###"],
