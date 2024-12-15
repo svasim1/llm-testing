@@ -89,7 +89,7 @@ async def get_token_usage():
 @app.post("/report")
 async def report_issue(issue: IssueReport, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     try:
-        db_issue = Issue(user_id=current_user.id, issue=issue.issue)
+        db_issue = Issue(user_id=current_user.username, issue=issue.issue)
         db.add(db_issue)
         db.commit()
         db.refresh(db_issue)
