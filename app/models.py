@@ -44,6 +44,11 @@ def create_user(db, username, email, password):
     db.refresh(db_user)
     return db_user
 
+def clear_database(db):
+    db.query(User).delete()
+    db.query(Issue).delete()
+    db.commit()
+
 # Create the database tables - only needed when adding new tables
 #Base.metadata.create_all(bind=engine)
 
